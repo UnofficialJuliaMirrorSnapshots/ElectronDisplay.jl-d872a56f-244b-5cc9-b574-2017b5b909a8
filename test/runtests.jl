@@ -4,6 +4,15 @@ using Electron
 using VegaDatasets
 using Test
 
+struct DummyDisplayable{M}
+    data
+end
+
+Base.show(io::IO, m::M, x::DummyDisplayable{M}) where {M} = true
+Base.show(io::IO, m::M, x::DummyDisplayable{M}) where {M} = print(io, x.data)
+
+include("construct_vega_specs.jl")
+
 @testset "ElectronDisplay" begin
 
 p1 = plot(y=[1,2,3])
@@ -25,12 +34,30 @@ f2 = display(p2)
 
 eldt = ElectronDisplay.ElectronDisplayType()
 
+@test electrondisplay(vl2) isa Electron.Window
+@test electrondisplay(vl3) isa Electron.Window
+@test electrondisplay(vg3) isa Electron.Window
+@test electrondisplay(vg4) isa Electron.Window
+@test electrondisplay(vg5) isa Electron.Window
+
+mdo = DummyDisplayable{MIME"text/markdown"}("""foo""")
+@test electrondisplay(mdo) isa Electron.Window
+
+pngo = DummyDisplayable{MIME"image/png"}("""fakedata""")
+@test electrondisplay(pngo) isa Electron.Window
+
+dro = DummyDisplayable{MIME"application/vnd.dataresource+json"}("""{"schema":{"fields":[{"name": "Miles_per_Gallon","type": "number"}]},"data":[{"Miles_per_Gallon":18}]}""")
+@test electrondisplay(dro) isa Electron.Window
+
 @test displayable(eldt, "text/html") == true
 @test displayable(eldt, "text/markdown") == true
 @test displayable(eldt, "image/png") == true
 @test displayable(eldt, "image/svg+xml") == true
 @test displayable(eldt, "application/vnd.vegalite.v2+json") == true
+@test displayable(eldt, "application/vnd.vegalite.v3+json") == true
 @test displayable(eldt, "application/vnd.vega.v3+json") == true
+@test displayable(eldt, "application/vnd.vega.v4+json") == true
+@test displayable(eldt, "application/vnd.vega.v5+json") == true
 @test displayable(eldt, "application/vnd.plotly.v1+json") == true
 @test displayable(eldt, "application/vnd.dataresource+json") == true
 
